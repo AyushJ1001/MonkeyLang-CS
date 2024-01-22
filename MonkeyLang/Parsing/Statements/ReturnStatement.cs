@@ -1,3 +1,4 @@
+using System.Text;
 using MonkeyLang.Lexing;
 
 namespace MonkeyLang.Parsing.Statements;
@@ -15,5 +16,16 @@ public class ReturnStatement(Token token) : IStatement
     public void StatementNode()
     {
         
+    }
+
+    public override string ToString()
+    {
+        StringBuilder builder = new();
+
+        builder.Append(TokenLiteral() + " ");
+        builder.Append(ReturnValue?.ToString() ?? "");
+        builder.Append(';');
+
+        return builder.ToString();
     }
 }

@@ -1,5 +1,6 @@
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing;
+using MonkeyLang.Parsing.Expressions;
 using MonkeyLang.Parsing.Statements;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -92,6 +93,91 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         }
     }
 
+    [Fact]
+    public void TestIdentifierExpression()
+    {
+        const string input = "foobar;";
+
+        var lexer = new Lexer(input);
+        var parser = new Parser(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+
+        Assert.Equal(1, program.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement) program.Statements[0];
+
+        Assert.IsType<Identifier>(statement.Expression);
+        var ident = (Identifier)statement.Expression;
+
+        Assert.Equal("foobar", ident.Value);
+        Assert.Equal("foobar", ident.TokenLiteral());
+    }
+
+    [Fact]
+    public void TestIntegerLiteralExpression()
+    {
+        const string input = "5;";
+
+        var lexer = new Lexer(input);
+        var parser = new Parser(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Equal(1, program.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement) program.Statements[0];
+
+        Assert.IsType<IntegerLiteral>(statement.Expression);
+        var literal = (IntegerLiteral) statement.Expression;
+
+        Assert.Equal(5, literal.Value);
+    }
+
+    [Fact]
+    public void TestParsingPrefixExpressions()
+    {
+        var prefixTests = new[]
+        {
+            ("!5;", "!", 5),
+            ("-15", "-", 15)
+        };
+
+        foreach (var (input, op, value) in prefixTests)
+        {
+            var lexer = new Lexer(input);
+            var parser = new Parser(lexer);
+            var program = parser.ParseProgram();
+            CheckParserErrors(parser);
+
+            Assert.NotNull(program);
+            Assert.Equal(1, program.Statements.Count);
+
+            Assert.IsType<ExpressionStatement>(program.Statements[0]);
+            var statement = (ExpressionStatement) program.Statements[0];
+
+            Assert.IsType<PrefixExpression>(statement.Expression);
+            var expression = (PrefixExpression) statement.Expression;
+
+            Assert.Equal(op, expression.Operator);
+            TestIntegerLiteral(expression.Right, value);
+        }
+    }
+
+    private void TestIntegerLiteral(IExpression? expression, int value)
+    {
+        Assert.IsType<IntegerLiteral>(expression);
+        var integerLiteral = (IntegerLiteral) expression;
+
+        Assert.Equal(value, integerLiteral.Value);
+        Assert.Equal(value.ToString(), integerLiteral.TokenLiteral());
+    }
+
     private void CheckParserErrors(Parser parser)
     {
         var errors = parser.Errors();
@@ -109,8 +195,7 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         throw new Exception("Parser has errors");
     }
 
-
-    private bool TestLetStatement(IStatement statement, string name)
+    private static bool TestLetStatement(INode statement, string name)
     {
         if (statement.TokenLiteral() != "let")
         {

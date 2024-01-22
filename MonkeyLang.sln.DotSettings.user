@@ -5,5 +5,6 @@
   &lt;TestAncestor&gt;
     &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.LexerTest.TestNextToken&lt;/TestId&gt;
     &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.ParserTest&lt;/TestId&gt;
+    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.AstTest.TestString&lt;/TestId&gt;
   &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

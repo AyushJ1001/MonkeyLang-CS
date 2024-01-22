@@ -2,10 +2,10 @@ using MonkeyLang.Lexing;
 
 namespace MonkeyLang.Parsing.Expressions;
 
-public class Identifier : IExpression
+public class IntegerLiteral: IExpression
 {
     public Token Token;
-    public string Value;
+    public long Value;
 
     public string TokenLiteral()
     {
@@ -18,6 +18,6 @@ public class Identifier : IExpression
 
     public override string ToString()
     {
-        return Value;
+        return Token.Literal;
     }
 }

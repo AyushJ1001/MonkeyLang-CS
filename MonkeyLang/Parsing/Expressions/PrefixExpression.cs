@@ -1,12 +1,13 @@
+using System.Text;
 using MonkeyLang.Lexing;
 
 namespace MonkeyLang.Parsing.Expressions;
 
-public class Identifier : IExpression
+public class PrefixExpression: IExpression
 {
     public Token Token;
-    public string Value;
-
+    public string Operator;
+    public IExpression? Right;
     public string TokenLiteral()
     {
         return Token.Literal;
@@ -18,6 +19,6 @@ public class Identifier : IExpression
 
     public override string ToString()
     {
-        return Value;
+        return $"({Operator}{Right})";
     }
 }
