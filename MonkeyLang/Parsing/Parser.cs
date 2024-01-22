@@ -1,6 +1,7 @@
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing.Expressions;
 using MonkeyLang.Parsing.Statements;
+using Boolean = MonkeyLang.Parsing.Expressions.Boolean;
 
 namespace MonkeyLang.Parsing;
 
@@ -25,8 +26,20 @@ public sealed class Parser
     private Token _peekToken;
     private readonly IList<string> _errors;
 
+    private static readonly Dictionary<TokenType, Precedence> _precedences =
+        new()
+        {
+            { TokenType.Eq, Precedence.Equals },
+            { TokenType.NotEq, Precedence.Equals },
+            { TokenType.Lt, Precedence.LessGreater },
+            { TokenType.Gt, Precedence.LessGreater },
+            { TokenType.Plus, Precedence.Sum },
+            { TokenType.Minus, Precedence.Sum },
+            { TokenType.Slash, Precedence.Product },
+            { TokenType.Asterisk, Precedence.Product },
+        };
     private readonly Dictionary<TokenType, PrefixParseFn> _prefixParseFns;
-    private readonly Dictionary<TokenType, InfixParseFn> _infixParseFns = new();
+    private readonly Dictionary<TokenType, InfixParseFn> _infixParseFns;
 
     public Parser(Lexer lexer)
     {
@@ -41,6 +54,116 @@ public sealed class Parser
         RegisterPrefix(TokenType.Int, ParseIntegerLiteral);
         RegisterPrefix(TokenType.Bang, ParsePrefixExpression);
         RegisterPrefix(TokenType.Minus, ParsePrefixExpression);
+        RegisterPrefix(TokenType.True, ParseBoolean);
+        RegisterPrefix(TokenType.False, ParseBoolean);
+        RegisterPrefix(TokenType.Lparen, ParseGroupedExpression);
+        RegisterPrefix(TokenType.If, ParseIfExpression);
+
+        _infixParseFns = new Dictionary<TokenType, InfixParseFn>();
+        RegisterInfix(TokenType.Plus, ParseInfixExpression);
+        RegisterInfix(TokenType.Minus, ParseInfixExpression);
+        RegisterInfix(TokenType.Slash, ParseInfixExpression);
+        RegisterInfix(TokenType.Asterisk, ParseInfixExpression);
+        RegisterInfix(TokenType.Eq, ParseInfixExpression);
+        RegisterInfix(TokenType.NotEq, ParseInfixExpression);
+        RegisterInfix(TokenType.Lt, ParseInfixExpression);
+        RegisterInfix(TokenType.Gt, ParseInfixExpression);
+    }
+
+    private IExpression? ParseIfExpression()
+    {
+        var expression = new IfExpression
+        {
+            Token = _currentToken
+        };
+
+        if (!ExpectPeek(TokenType.Lparen))
+        {
+            return null;
+        }
+
+        NextToken();
+        expression.Condition = ParseExpression(Precedence.Lowest);
+
+        if (!ExpectPeek(TokenType.Rparen))
+        {
+            return null;
+        }
+
+        if (!ExpectPeek(TokenType.Lbrace))
+        {
+            return null;
+        }
+
+        expression.Consequence = ParseBlockStatement();
+
+        if (_peekToken.TokenType == TokenType.Else)
+        {
+            NextToken();
+
+            if (!ExpectPeek(TokenType.Lbrace)) return null;
+
+            expression.Alternative = ParseBlockStatement();
+        }
+
+        return expression;
+    }
+
+    private BlockStatement? ParseBlockStatement()
+    {
+        var block = new BlockStatement
+        {
+            Token = _currentToken,
+            Statements = new List<IStatement>()
+        };
+
+        NextToken();
+
+        while (_currentToken.TokenType is not (TokenType.Rbrace or TokenType.Eof))
+        {
+            var statement = ParseStatement();
+            if (statement != null)
+            {
+                block.Statements.Add(statement);
+            }
+            NextToken();
+        }
+
+        return block;
+    }
+
+    private IExpression? ParseGroupedExpression()
+    {
+        NextToken();
+
+        var expression = ParseExpression(Precedence.Lowest);
+
+        return ExpectPeek(TokenType.Rparen) ? expression : null;
+    }
+
+    private IExpression? ParseBoolean()
+    {
+        return new Boolean
+        {
+            Token = _currentToken,
+            Value = _currentToken.TokenType == TokenType.True
+        };
+    }
+
+    private IExpression? ParseInfixExpression(IExpression? left)
+    {
+        var expression = new InfixExpression
+        {
+            Token = _currentToken,
+            Operator = _currentToken.Literal,
+            Left = left,
+        };
+
+        var precedence = CurPrecedence();
+        NextToken();
+        expression.Right = ParseExpression(precedence);
+
+        return expression;
     }
 
     private IExpression? ParsePrefixExpression()
@@ -142,8 +265,21 @@ public sealed class Parser
 
         var leftExpression = value();
 
-        return leftExpression;
+        while (_peekToken.TokenType != TokenType.Semicolon &&
+               precedence < PeekPrecedence())
+        {
+            if (!_infixParseFns.TryGetValue(_peekToken.TokenType,
+                    out var infix))
+            {
+                return leftExpression;
+            }
 
+            NextToken();
+
+            leftExpression = infix(leftExpression);
+        }
+
+        return leftExpression;
     }
 
     private IStatement? ParseReturnStatement()
@@ -234,5 +370,17 @@ public sealed class Parser
             _errors.Add($"Could not parse {_currentToken.Literal} as integer");
             return null;
         }
+    }
+
+    private Precedence PeekPrecedence()
+    {
+        return _precedences.GetValueOrDefault(_peekToken.TokenType,
+            Precedence.Lowest);
+    }
+
+    private Precedence CurPrecedence()
+    {
+        return _precedences.GetValueOrDefault(_currentToken.TokenType,
+            Precedence.Lowest);
     }
 }

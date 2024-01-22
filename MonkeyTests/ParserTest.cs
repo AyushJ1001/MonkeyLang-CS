@@ -4,6 +4,7 @@ using MonkeyLang.Parsing.Expressions;
 using MonkeyLang.Parsing.Statements;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Boolean = MonkeyLang.Parsing.Expressions.Boolean;
 
 namespace MonkeyTests;
 
@@ -108,7 +109,7 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         Assert.Equal(1, program.Statements.Count);
 
         Assert.IsType<ExpressionStatement>(program.Statements[0]);
-        var statement = (ExpressionStatement) program.Statements[0];
+        var statement = (ExpressionStatement)program.Statements[0];
 
         Assert.IsType<Identifier>(statement.Expression);
         var ident = (Identifier)statement.Expression;
@@ -131,10 +132,10 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         Assert.Equal(1, program.Statements.Count);
 
         Assert.IsType<ExpressionStatement>(program.Statements[0]);
-        var statement = (ExpressionStatement) program.Statements[0];
+        var statement = (ExpressionStatement)program.Statements[0];
 
         Assert.IsType<IntegerLiteral>(statement.Expression);
-        var literal = (IntegerLiteral) statement.Expression;
+        var literal = (IntegerLiteral)statement.Expression;
 
         Assert.Equal(5, literal.Value);
     }
@@ -142,10 +143,12 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
     [Fact]
     public void TestParsingPrefixExpressions()
     {
-        var prefixTests = new[]
+        var prefixTests = new (string, string, object)[]
         {
             ("!5;", "!", 5),
-            ("-15", "-", 15)
+            ("-15;", "-", 15),
+            ("!false;", "!", false),
+            ("!true;", "!", true)
         };
 
         foreach (var (input, op, value) in prefixTests)
@@ -159,23 +162,288 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
             Assert.Equal(1, program.Statements.Count);
 
             Assert.IsType<ExpressionStatement>(program.Statements[0]);
-            var statement = (ExpressionStatement) program.Statements[0];
+            var statement = (ExpressionStatement)program.Statements[0];
 
             Assert.IsType<PrefixExpression>(statement.Expression);
-            var expression = (PrefixExpression) statement.Expression;
+            var expression = (PrefixExpression)statement.Expression;
 
             Assert.Equal(op, expression.Operator);
-            TestIntegerLiteral(expression.Right, value);
+            TestLiteralExpression(expression.Right, value);
         }
     }
 
-    private void TestIntegerLiteral(IExpression? expression, int value)
+    [Fact]
+    public void TestParsingInfixExpressions()
+    {
+        var infixTests = new (string, object, string, object)[]
+        {
+            ("5 + 5;", 5, "+", 5),
+            ("5 - 5;", 5, "-", 5),
+            ("5 * 5;", 5, "*", 5),
+            ("5 / 5;", 5, "/", 5),
+            ("5 > 5;", 5, ">", 5),
+            ("5 < 5;", 5, "<", 5),
+            ("5 == 5;", 5, "==", 5),
+            ("5 != 5;", 5, "!=", 5),
+            ("true == true", true, "==", true),
+            ("true != false", true, "!=", false),
+            ("false == false", false, "==", false)
+        };
+
+        foreach (var (input, left, op, right) in infixTests)
+        {
+            var lexer = new Lexer(input);
+            var parser = new Parser(lexer);
+            var program = parser.ParseProgram();
+            CheckParserErrors(parser);
+
+            Assert.NotNull(program);
+            Assert.Equal(1, program.Statements.Count);
+
+            Assert.IsType<ExpressionStatement>(program.Statements[0]);
+            var statement = (ExpressionStatement)program.Statements[0];
+
+            Assert.IsType<InfixExpression>(statement.Expression);
+            var expression = (InfixExpression)statement.Expression;
+
+            TestLiteralExpression(expression.Left, left);
+            TestLiteralExpression(expression.Right, right);
+        }
+    }
+
+    [Fact]
+    public void TestBooleanExpression()
+    {
+        const string input = "true;";
+
+        var lexer = new Lexer(input);
+        var parser = new Parser(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Equal(1, program.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<Boolean>(statement.Expression);
+        var expression = (Boolean)statement.Expression;
+
+        Assert.True(expression.Value);
+    }
+
+    [Fact]
+    public void TestOperatorPrecedenceParsing()
+    {
+        var tests = new[]
+        {
+            (
+                "-a * b",
+                "((-a) * b)"
+            ),
+            (
+                "!-a",
+                "(!(-a))"
+            ),
+            (
+                "a + b + c",
+                "((a + b) + c)"
+            ),
+            (
+                "a + b - c",
+                "((a + b) - c)"
+            ),
+            (
+                "a * b * c",
+                "((a * b) * c)"
+            ),
+            (
+                "a * b / c",
+                "((a * b) / c)"
+            ),
+            (
+                "a + b / c",
+                "(a + (b / c))"
+            ),
+            (
+                "a + b * c + d / e - f",
+                "(((a + (b * c)) + (d / e)) - f)"
+            ),
+            (
+                "3 + 4; -5 * 5",
+                "(3 + 4)((-5) * 5)"
+            ),
+            (
+                "5 > 4 == 3 < 4",
+                "((5 > 4) == (3 < 4))"
+            ),
+            (
+                "5 < 4 != 3 > 4",
+                "((5 < 4) != (3 > 4))"
+            ),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+            ),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"
+            ),
+            ("true", "true"),
+            ("false", "false"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("3 < 5 == true", "((3 < 5) == true)"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+            ("(5 + 5) * 2", "((5 + 5) * 2)"),
+            ("2 / (5 + 5)", "(2 / (5 + 5))"),
+            ("-(5 + 5)", "(-(5 + 5))"),
+            ("!(true == true)", "(!(true == true))")
+        };
+
+        foreach (var (input, expected) in tests)
+        {
+            var lexer = new Lexer(input);
+            var parser = new Parser(lexer);
+            var program = parser.ParseProgram();
+            CheckParserErrors(parser);
+
+            Assert.NotNull(program);
+            Assert.Equal(expected, program.ToString());
+        }
+    }
+
+    [Fact]
+    public void TestIfExpression()
+    {
+        const string input = "if (x < y) { x }";
+
+        var lexer = new Lexer(input);
+        var parser = new Parser(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Equal(1, program.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<IfExpression>(statement.Expression);
+        var expression = (IfExpression)statement.Expression;
+
+        TestInfixExpression(expression.Condition, "x", "<", "y");
+
+        Assert.NotNull(expression.Consequence);
+        Assert.Equal(1, expression.Consequence.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(expression.Consequence
+            .Statements[0]);
+        var consequence =
+            (ExpressionStatement)expression.Consequence.Statements[0];
+
+        TestIdentifier(consequence.Expression, "x");
+
+        Assert.Null(expression.Alternative);
+    }
+
+    private static void TestIntegerLiteral(IExpression? expression, int value)
     {
         Assert.IsType<IntegerLiteral>(expression);
-        var integerLiteral = (IntegerLiteral) expression;
+        var integerLiteral = (IntegerLiteral)expression;
 
         Assert.Equal(value, integerLiteral.Value);
         Assert.Equal(value.ToString(), integerLiteral.TokenLiteral());
+    }
+
+    [Fact]
+    public void TestIfElseExpression()
+    {
+        const string input = "if (x < y) { x } else { y }";
+
+        var lexer = new Lexer(input);
+        var parser = new Parser(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Equal(1, program.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<IfExpression>(statement.Expression);
+        var expression = (IfExpression)statement.Expression;
+
+        TestInfixExpression(expression.Condition, "x", "<", "y");
+
+        Assert.NotNull(expression.Consequence);
+        Assert.Equal(1, expression.Consequence.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(expression.Consequence
+            .Statements[0]);
+        var consequence =
+            (ExpressionStatement)expression.Consequence.Statements[0];
+
+        TestIdentifier(consequence.Expression, "x");
+
+        Assert.NotNull(expression.Alternative);
+        Assert.Equal(1, expression.Alternative.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(expression.Alternative
+            .Statements[0]);
+        var alternative =
+            (ExpressionStatement)expression.Alternative.Statements[0];
+
+        TestIdentifier(alternative.Expression, "y");
+    }
+
+    private static void TestIdentifier(IExpression? expression, string value)
+    {
+        Assert.IsType<Identifier>(expression);
+        var identifier = (Identifier)expression;
+
+        Assert.Equal(value, identifier.Value);
+        Assert.Equal(value, identifier.TokenLiteral());
+    }
+
+    private static void TestLiteralExpression(IExpression? expression,
+        object expected)
+    {
+        switch (expected)
+        {
+            case int expectedInteger:
+                TestIntegerLiteral(expression, expectedInteger);
+                break;
+            case string expectedString:
+                TestIdentifier(expression, expectedString);
+                break;
+            case bool expectedBoolean:
+                TestBooleanLiteral(expression, expectedBoolean);
+                break;
+            default:
+                throw new Exception(
+                    $"type of expression not handled. got={expression?.GetType()}");
+        }
+    }
+
+    private static void TestBooleanLiteral(IExpression? expression, bool value)
+    {
+        Assert.IsType<Boolean>(expression);
+        var boolean = (Boolean)expression;
+
+        Assert.Equal(value, boolean.Value);
+    }
+
+    private static void TestInfixExpression(IExpression? expression, object
+        left, string op, object right)
+    {
+        Assert.IsType<InfixExpression>(expression);
+        var infixExpression = (InfixExpression)expression;
+
+        TestLiteralExpression(infixExpression.Left, left);
+        Assert.Equal(infixExpression.Operator, op);
+        TestLiteralExpression(infixExpression.Right, right);
     }
 
     private void CheckParserErrors(Parser parser)
