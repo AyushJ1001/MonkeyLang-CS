@@ -40,6 +40,44 @@ public enum TokenType
     Return
 }
 
+public static class TokenTypeExtensions
+{
+    public static string TokenTypeString(this TokenType tokenType)
+    {
+        return tokenType switch
+        {
+            TokenType.Illegal => "ILLEGAL",
+            TokenType.Eof => "EOF",
+            TokenType.Ident => "IDENT",
+            TokenType.Int => "INT",
+            TokenType.Assign => "=",
+            TokenType.Plus => "+",
+            TokenType.Minus => "-",
+            TokenType.Bang => "!",
+            TokenType.Asterisk => "*",
+            TokenType.Slash => "/",
+            TokenType.Lt => "<",
+            TokenType.Gt => ">",
+            TokenType.Eq => "==",
+            TokenType.NotEq => "!=",
+            TokenType.Comma => ",",
+            TokenType.Semicolon => ";",
+            TokenType.Lparen => "(",
+            TokenType.Rparen => ")",
+            TokenType.Lbrace => "{",
+            TokenType.Rbrace => "}",
+            TokenType.Function => "FUNCTION",
+            TokenType.Let => "LET",
+            TokenType.True => "TRUE",
+            TokenType.False => "FALSE",
+            TokenType.If => "IF",
+            TokenType.Else => "ELSE",
+            TokenType.Return => "RETURN",
+            _ => throw new ArgumentOutOfRangeException(nameof(tokenType), tokenType, null)
+        };
+    }
+}
+
 public struct Token(TokenType tokenType, string literal)
 {
     public readonly TokenType TokenType = tokenType;

@@ -288,7 +288,7 @@ public sealed class Parser
     private void PeekErrors(TokenType tokenType)
     {
         var message = $"Expected next token to be" +
-                      $" {tokenType}, got {_peekToken.TokenType} " +
+                      $" {tokenType.TokenTypeString()}, got {_peekToken.TokenType} " +
                       $"instead";
         _errors.Add(message);
     }
@@ -377,8 +377,9 @@ public sealed class Parser
 
         NextToken();
 
-        //TODO: We're skipping the expressions until we encounter a semicolon
-        while (_currentToken.TokenType != TokenType.Semicolon)
+        statement.ReturnValue = ParseExpression(Precedence.Lowest);
+
+        if (_peekToken.TokenType == TokenType.Semicolon)
         {
             NextToken();
         }
@@ -409,8 +410,10 @@ public sealed class Parser
             return null;
         }
 
-        // TODO: We're skipping the expressions until we encounter a semicolon
-        while (_currentToken.TokenType != TokenType.Semicolon)
+        NextToken();
+
+        statement.Value = ParseExpression(Precedence.Lowest);
+        if (_peekToken.TokenType == TokenType.Semicolon)
         {
             NextToken();
         }

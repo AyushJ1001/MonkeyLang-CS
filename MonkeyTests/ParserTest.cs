@@ -15,40 +15,28 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
     [Fact]
     public void TestLetStatements()
     {
-        const string input = """
-                             let x = 5;
-                             let y = 10;
-                             let foobar = 838383;
-                             """;
+        (string, string, object)[] tests =
+        [
+            ("let x = 5;", "x", 5),
+            ("let y = true;", "y", true),
+            ("let foobar = y;", "foobar", "y")
+        ];
 
-        var lexer = new Lexer(input);
-        var parser = new Parser(lexer);
-
-        var program = parser.ParseProgram();
-        CheckParserErrors(parser);
-        if (program == null)
+        foreach (var (input, ident, value) in tests)
         {
-            throw new NotNullException();
-        }
+            var lexer = new Lexer(input);
+            var parser = new Parser(lexer);
+            var program = parser.ParseProgram();
+            CheckParserErrors(parser);
 
-        if (program.Statements.Count != 3)
-        {
-            throw new Exception(
-                "program.Statements does not contain 3 statements" +
-                $". got={program.Statements.Count}");
-        }
+            Assert.NotNull(program);
+            Assert.Single(program.Statements);
 
-        var tests = new[]
-        {
-            ("x"),
-            ("y"),
-            ("foobar")
-        };
+            Assert.True(TestLetStatement(program.Statements[0], ident));
 
-        for (int i = 0; i < tests.Length; i++)
-        {
-            var statement = program.Statements[i];
-            Assert.True(TestLetStatement(statement, tests[i]));
+            var letStatement = (LetStatement)program.Statements[0];
+
+            TestLiteralExpression(letStatement.Value, value);
         }
     }
 

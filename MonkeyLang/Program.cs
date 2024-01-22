@@ -1,6 +1,20 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using MonkeyLang.Lexing;
+using MonkeyLang.Parsing;
+const string MONKEY_FACE = """"""""
+                                      __,__
+                             .--.  .-"     "-.  .--.
+                            / .. \/  .-. .-.  \/ .. \
+                           | |  '|  /   Y   \  |'  | |
+                           | \   \  \ 0 | 0 /  /   / |
+                           \  '- ,\.-"""""""-./, -' /
+                            ''-'  /_   ^ ^   _\ '-''
+                                 |  \._   _./  |
+                                 \   \ '~' /   /
+                                  '._ '-=-' _.'
+                                     '-----'
+                           """""""";
 
 var user = System.Environment.UserName;
 Console.WriteLine($"Hello {user}! This is the Monkey Programming Language!");
@@ -11,6 +25,7 @@ return;
 
 void Start()
 {
+
     const string prompt = ">> ";
 
     while (true)
@@ -21,12 +36,26 @@ void Start()
         if (line == null) return;
 
         Lexer lexer = new(line);
-        var token = lexer.NextToken();
+        Parser parser = new(lexer);
+        var program = parser.ParseProgram();
 
-        while (token.TokenType != TokenType.Eof)
+        if (parser.Errors().Count != 0)
         {
-            Console.WriteLine(token);
-            token = lexer.NextToken();
+            PrintParseErrors(parser.Errors());
+            continue;
         }
+
+        Console.WriteLine(program);
+    }
+}
+
+void PrintParseErrors(IList<string> errors)
+{
+    Console.Error.WriteLine(MONKEY_FACE);
+    Console.Error.WriteLine("Woops! We ran into some monkey business here!");
+    Console.Error.WriteLine(" parser errors:");
+    foreach (var error in errors)
+    {
+        Console.Error.WriteLine($"\t{error}");
     }
 }
