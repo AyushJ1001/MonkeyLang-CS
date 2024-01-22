@@ -398,6 +398,72 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         TestIdentifier(alternative.Expression, "y");
     }
 
+    [Fact]
+    public void TestFunctionalLiteralParsing()
+    {
+        const string input = "fn(x, y) { x + y; }";
+
+        var lexer = new Lexer(input);
+        var parser = new Parser(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Equal(1, program.Statements.Count);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<FunctionLiteral>(statement.Expression);
+        var function = (FunctionLiteral)statement.Expression;
+
+        Assert.Equal(2, function.Parameters.Count);
+
+        TestLiteralExpression(function.Parameters[0], "x");
+        TestLiteralExpression(function.Parameters[1], "y");
+
+        Assert.Equal(1, function.Body.Statements.Count);
+        Assert.IsType<ExpressionStatement>(function.Body.Statements[0]);
+        var bodyStatement = (ExpressionStatement)function.Body.Statements[0];
+
+        TestInfixExpression(bodyStatement.Expression, "x", "+", "y");
+    }
+
+    [Fact]
+    public void TestFunctionParameterParsing()
+    {
+        (string, string[])[] tests =
+        [
+            ("fn() {};", []),
+            ("fn(x) {};", ["x"]),
+            ("fn(x, y, z) {};", ["x", "y", "z"])
+        ];
+
+        foreach (var (input, expectedParams) in tests)
+        {
+            var lexer = new Lexer(input);
+            var parser = new Parser(lexer);
+            var program = parser.ParseProgram();
+            CheckParserErrors(parser);
+
+            Assert.NotNull(program);
+            Assert.IsType<ExpressionStatement>(program.Statements[0]);
+            var statement = (ExpressionStatement)program.Statements[0];
+
+            Assert.IsType<FunctionLiteral>(statement.Expression);
+            var function = (FunctionLiteral)statement.Expression;
+
+            Assert.NotNull(function.Parameters);
+            Assert.Equal(expectedParams.Length, function.Parameters.Count);
+
+            for (var i = 0; i < expectedParams.Length; i++)
+            {
+                TestLiteralExpression(function.Parameters[i],
+                    expectedParams[i]);
+            }
+        }
+    }
+
     private static void TestIdentifier(IExpression? expression, string value)
     {
         Assert.IsType<Identifier>(expression);

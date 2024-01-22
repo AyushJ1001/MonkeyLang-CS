@@ -58,6 +58,7 @@ public sealed class Parser
         RegisterPrefix(TokenType.False, ParseBoolean);
         RegisterPrefix(TokenType.Lparen, ParseGroupedExpression);
         RegisterPrefix(TokenType.If, ParseIfExpression);
+        RegisterPrefix(TokenType.Function, ParseFunctionLiteral);
 
         _infixParseFns = new Dictionary<TokenType, InfixParseFn>();
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -68,6 +69,55 @@ public sealed class Parser
         RegisterInfix(TokenType.NotEq, ParseInfixExpression);
         RegisterInfix(TokenType.Lt, ParseInfixExpression);
         RegisterInfix(TokenType.Gt, ParseInfixExpression);
+    }
+
+    private IExpression? ParseFunctionLiteral()
+    {
+        var literal = new FunctionLiteral { Token = _currentToken };
+
+        if (!ExpectPeek(TokenType.Lparen)) return null;
+
+        literal.Parameters = ParseFunctionParameters();
+
+        if (!ExpectPeek(TokenType.Lbrace)) return null;
+
+        literal.Body = ParseBlockStatement();
+
+        return literal;
+    }
+
+    private IList<Identifier>? ParseFunctionParameters()
+    {
+        var identifiers = new List<Identifier>();
+
+        if (_peekToken.TokenType == TokenType.Rparen)
+        {
+            NextToken();
+            return identifiers;
+        }
+
+        NextToken();
+
+        var ident = new Identifier
+        {
+            Token = _currentToken, Value =
+                _currentToken.Literal
+        };
+        identifiers.Add(ident);
+
+        while (_peekToken.TokenType == TokenType.Comma)
+        {
+            NextToken();
+            NextToken();
+            ident = new Identifier
+            {
+                Token = _currentToken,
+                Value = _currentToken.Literal
+            };
+            identifiers.Add(ident);
+        }
+
+        return !ExpectPeek(TokenType.Rparen) ? null : identifiers;
     }
 
     private IExpression? ParseIfExpression()
