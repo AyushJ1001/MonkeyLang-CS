@@ -37,7 +37,9 @@ public sealed class Parser
             { TokenType.Minus, Precedence.Sum },
             { TokenType.Slash, Precedence.Product },
             { TokenType.Asterisk, Precedence.Product },
+            { TokenType.Lparen, Precedence.Call }
         };
+
     private readonly Dictionary<TokenType, PrefixParseFn> _prefixParseFns;
     private readonly Dictionary<TokenType, InfixParseFn> _infixParseFns;
 
@@ -69,6 +71,42 @@ public sealed class Parser
         RegisterInfix(TokenType.NotEq, ParseInfixExpression);
         RegisterInfix(TokenType.Lt, ParseInfixExpression);
         RegisterInfix(TokenType.Gt, ParseInfixExpression);
+        RegisterInfix(TokenType.Lparen, ParseCallExpression);
+    }
+
+    private IExpression? ParseCallExpression(IExpression? function)
+    {
+        var expression = new CallExpression
+        {
+            Token = _currentToken,
+            Function = function,
+            Arguments = ParseCallArguments()
+        };
+
+        return expression;
+    }
+
+    private IList<IExpression?>? ParseCallArguments()
+    {
+        var args = new List<IExpression?>();
+
+        if (_peekToken.TokenType == TokenType.Rparen)
+        {
+            NextToken();
+            return args;
+        }
+
+        NextToken();
+        args.Add(ParseExpression(Precedence.Lowest));
+
+        while (_peekToken.TokenType == TokenType.Comma)
+        {
+            NextToken();
+            NextToken();
+            args.Add(ParseExpression(Precedence.Lowest));
+        }
+
+        return !ExpectPeek(TokenType.Rparen) ? null : args;
     }
 
     private IExpression? ParseFunctionLiteral()
@@ -169,13 +207,15 @@ public sealed class Parser
 
         NextToken();
 
-        while (_currentToken.TokenType is not (TokenType.Rbrace or TokenType.Eof))
+        while (_currentToken.TokenType is not (TokenType.Rbrace or TokenType.Eof
+               ))
         {
             var statement = ParseStatement();
             if (statement != null)
             {
                 block.Statements.Add(statement);
             }
+
             NextToken();
         }
 
@@ -304,7 +344,6 @@ public sealed class Parser
 
     private IExpression? ParseExpression(Precedence precedence)
     {
-
         if (!_prefixParseFns.TryGetValue(_currentToken.TokenType,
                 out var value))
         {

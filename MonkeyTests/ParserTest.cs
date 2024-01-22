@@ -464,6 +464,33 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         }
     }
 
+    [Fact]
+    public void TestCallExpression()
+    {
+        const string input = "add(1, 2 * 3, 4 + 5);";
+
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<CallExpression>(statement.Expression);
+        var expression = (CallExpression)statement.Expression;
+
+        TestIdentifier(expression.Function, "add");
+        Assert.Equal(3, expression.Arguments.Count);
+
+        TestLiteralExpression(expression.Arguments[0], 1);
+        TestInfixExpression(expression.Arguments[1], 2, "*", 3);
+        TestInfixExpression(expression.Arguments[2], 4, "+", 5);
+    }
+
     private static void TestIdentifier(IExpression? expression, string value)
     {
         Assert.IsType<Identifier>(expression);
