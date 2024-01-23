@@ -28,6 +28,7 @@ void Start()
 {
 
     const string prompt = ">> ";
+    MonkeyLang.Environment environment = new();
 
     while (true)
     {
@@ -46,7 +47,7 @@ void Start()
             continue;
         }
 
-        var evaluated = Evaluator.Eval(program);
+        var evaluated = Evaluator.Eval(program, environment);
         if (evaluated == null) continue;
 
         Console.WriteLine(evaluated.Inspect());

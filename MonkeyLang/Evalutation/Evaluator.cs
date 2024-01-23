@@ -12,35 +12,35 @@ public class Evaluator
     public readonly static Boolean FALSE = new() { Value = false };
     public readonly static Null NULL = new();
 
-    public static IObject Eval(INode? node)
+    public static IObject Eval(INode? node, Environment env)
     {
         switch (node)
         {
             // Statements
             case Parsing.Program program:
-                return EvalProgram(program.Statements);
+                return EvalProgram(program.Statements, env);
             case ExpressionStatement expressionStatement:
-                return Eval(expressionStatement.Expression);
+                return Eval(expressionStatement.Expression, env);
             // Expressions
             case IntegerLiteral literal:
                 return new Integer { Value = literal.Value };
             case Parsing.Expressions.Boolean boolean:
                 return boolean.Value ? TRUE : FALSE;
             case PrefixExpression prefixExpression:
-                var right = Eval(prefixExpression.Right);
+                var right = Eval(prefixExpression.Right, env);
                 if (IsError(right))
                 {
                     return right;
                 }
                 return EvalPrefixExpression(prefixExpression.Operator, right);
             case InfixExpression infixExpression:
-                var left = Eval(infixExpression.Left);
+                var left = Eval(infixExpression.Left, env);
                 if (IsError(left))
                 {
                     return left;
                 }
 
-                right = Eval(infixExpression.Right);
+                right = Eval(infixExpression.Right, env);
                 if (IsError(right))
                 {
                     return right;
@@ -48,33 +48,53 @@ public class Evaluator
 
                 return EvalInfixExpression(infixExpression.Operator, left, right);
             case BlockStatement blockStatement:
-                return EvalBlockStatement(blockStatement);
+                return EvalBlockStatement(blockStatement, env);
             case IfExpression ifExpression:
-                var condition = Eval(ifExpression.Condition);
+                var condition = Eval(ifExpression.Condition, env);
                 if (IsError(condition))
                 {
                     return condition;
                 }
-                return EvalIfExpression(ifExpression);
+                return EvalIfExpression(ifExpression, env);
             case ReturnStatement returnStatement:
-                var val = Eval(returnStatement.ReturnValue);
+                var val = Eval(returnStatement.ReturnValue, env);
                 if (IsError(val))
                 {
                     return val;
                 }
                 return new ReturnValue { Value = val };
+            case LetStatement letStatement:
+                val = Eval(letStatement.Value, env);
+                if (IsError(val))
+                {
+                    return val;
+                }
+                return env.Set(letStatement.Name?.Value ?? "", val);
+            case Identifier identifier:
+                return EvalIdentifier(identifier, env);
             default:
                 return NULL;
         }
     }
 
-    private static IObject EvalBlockStatement(BlockStatement blockStatement)
+    private static IObject EvalIdentifier(Identifier identifier, Environment env)
+    {
+        var val = env.Get(identifier.Value ?? "");
+        if (val is null)
+        {
+            return NewError($"identifier not found: {identifier.Value}");
+        }
+
+        return val;
+    }
+
+    private static IObject EvalBlockStatement(BlockStatement blockStatement, Environment env)
     {
         IObject? result = null;
 
         foreach (var statement in blockStatement.Statements)
         {
-            result = Eval(statement);
+            result = Eval(statement, env);
 
             if (result != null)
             {
@@ -91,16 +111,16 @@ public class Evaluator
         return result ?? NULL;
     }
 
-    private static IObject EvalIfExpression(IfExpression ifExpression)
+    private static IObject EvalIfExpression(IfExpression ifExpression, Environment env)
     {
-        var condition = Eval(ifExpression.Condition);
+        var condition = Eval(ifExpression.Condition, env);
         if (IsTruthy(condition))
         {
-            return Eval(ifExpression.Consequence);
+            return Eval(ifExpression.Consequence, env);
         }
         if (ifExpression.Alternative is not null)
         {
-            return Eval(ifExpression.Alternative);
+            return Eval(ifExpression.Alternative, env);
         }
         return NULL;
     }
@@ -184,13 +204,13 @@ public class Evaluator
         };
     }
 
-    private static IObject EvalProgram(IEnumerable<IStatement> statements)
+    private static IObject EvalProgram(IEnumerable<IStatement> statements, Environment env)
     {
         IObject result = NULL;
 
         foreach (var statement in statements)
         {
-            result = Eval(statement);
+            result = Eval(statement, env);
 
             if (result is ReturnValue returnValue)
             {

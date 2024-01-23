@@ -146,7 +146,8 @@ public class EvaluatorTest
             ("true + false;", "unknown operator: Boolean + Boolean"),
             ("5; true + false; 5", "unknown operator: Boolean + Boolean"),
             ("if (10 > 1) { true + false; }", "unknown operator: Boolean + Boolean"),
-            ("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: Boolean + Boolean")
+            ("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: Boolean + Boolean"),
+            ("foobar", "identifier not found: foobar")
         ];
 
         foreach (var (input, expected) in tests)
@@ -160,6 +161,21 @@ public class EvaluatorTest
         }
     }
 
+    [Fact]
+    public void TestLetStatements()
+    {
+        (string, long)[] tests = [
+            ("let a = 5; a;", 5),
+            ("let a = 5 * 5; a;", 25),
+            ("let a = 5; let b = a; b;", 5),
+            ("let a = 5; let b = a; let c = a + b + 5; c;", 15),
+        ];
+
+        foreach (var (input, expected) in tests)
+        {
+            TestIntegerObject(TestEval(input), expected);
+        }
+    }
     private static void TestNullObject(IObject? @object)
     {
         Assert.Equal(Evaluator.NULL, @object);
@@ -186,8 +202,9 @@ public class EvaluatorTest
         Lexer lexer = new(input);
         Parser parser = new(lexer);
         var program = parser.ParseProgram();
+        MonkeyLang.Environment env = new();
 
         Assert.NotNull(program);
-        return Evaluator.Eval(program);
+        return Evaluator.Eval(program, env);
     }
 }
