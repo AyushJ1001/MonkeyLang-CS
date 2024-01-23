@@ -66,13 +66,13 @@ public static class TokenTypeExtensions
             TokenType.Rparen => ")",
             TokenType.Lbrace => "{",
             TokenType.Rbrace => "}",
-            TokenType.Function => "FUNCTION",
-            TokenType.Let => "LET",
-            TokenType.True => "TRUE",
-            TokenType.False => "FALSE",
-            TokenType.If => "IF",
-            TokenType.Else => "ELSE",
-            TokenType.Return => "RETURN",
+            TokenType.Function => "function",
+            TokenType.Let => "let",
+            TokenType.True => "true",
+            TokenType.False => "false",
+            TokenType.If => "if",
+            TokenType.Else => "else",
+            TokenType.Return => "return",
             _ => throw new ArgumentOutOfRangeException(nameof(tokenType), tokenType, null)
         };
     }
