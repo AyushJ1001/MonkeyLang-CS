@@ -12,24 +12,60 @@ public class Evaluator
     public readonly static Boolean FALSE = new() { Value = false };
     public readonly static Null NULL = new();
 
-    public static IObject? Eval(INode? node)
+    public static IObject Eval(INode? node)
     {
-        return node switch
+        switch (node)
         {
             // Statements
-            Parsing.Program program => EvalProgram(program.Statements),
-            ExpressionStatement expressionStatement => Eval(expressionStatement
-                .Expression),
+            case Parsing.Program program:
+                return EvalProgram(program.Statements);
+            case ExpressionStatement expressionStatement:
+                return Eval(expressionStatement.Expression);
             // Expressions
-            IntegerLiteral literal => new Integer { Value = literal.Value },
-            Parsing.Expressions.Boolean boolean => boolean.Value ? TRUE : FALSE,
-            PrefixExpression prefixExpression => EvalPrefixExpression(prefixExpression.Operator, Eval(prefixExpression.Right)),
-            InfixExpression infixExpression => EvalInfixExpression(infixExpression.Operator, Eval(infixExpression.Left), Eval(infixExpression.Right)),
-            BlockStatement blockStatement => EvalBlockStatement(blockStatement),
-            IfExpression ifExpression => EvalIfExpression(ifExpression),
-            ReturnStatement returnStatement => new ReturnValue { Value = Eval(returnStatement.ReturnValue) ?? NULL },
-            _ => NULL
-        };
+            case IntegerLiteral literal:
+                return new Integer { Value = literal.Value };
+            case Parsing.Expressions.Boolean boolean:
+                return boolean.Value ? TRUE : FALSE;
+            case PrefixExpression prefixExpression:
+                var right = Eval(prefixExpression.Right);
+                if (IsError(right))
+                {
+                    return right;
+                }
+                return EvalPrefixExpression(prefixExpression.Operator, right);
+            case InfixExpression infixExpression:
+                var left = Eval(infixExpression.Left);
+                if (IsError(left))
+                {
+                    return left;
+                }
+
+                right = Eval(infixExpression.Right);
+                if (IsError(right))
+                {
+                    return right;
+                }
+
+                return EvalInfixExpression(infixExpression.Operator, left, right);
+            case BlockStatement blockStatement:
+                return EvalBlockStatement(blockStatement);
+            case IfExpression ifExpression:
+                var condition = Eval(ifExpression.Condition);
+                if (IsError(condition))
+                {
+                    return condition;
+                }
+                return EvalIfExpression(ifExpression);
+            case ReturnStatement returnStatement:
+                var val = Eval(returnStatement.ReturnValue);
+                if (IsError(val))
+                {
+                    return val;
+                }
+                return new ReturnValue { Value = val };
+            default:
+                return NULL;
+        }
     }
 
     private static IObject EvalBlockStatement(BlockStatement blockStatement)
@@ -40,8 +76,14 @@ public class Evaluator
         {
             result = Eval(statement);
 
-            if (result != null && result.Type() == ObjectType.ReturnValue)
+            if (result != null)
             {
+                var rt = result.Type();
+                if (rt == ObjectType.ReturnValue || rt == ObjectType.Error)
+                {
+                    return result;
+                }
+
                 return result;
             }
         }
@@ -49,7 +91,7 @@ public class Evaluator
         return result ?? NULL;
     }
 
-    private static IObject? EvalIfExpression(IfExpression ifExpression)
+    private static IObject EvalIfExpression(IfExpression ifExpression)
     {
         var condition = Eval(ifExpression.Condition);
         if (IsTruthy(condition))
@@ -81,11 +123,16 @@ public class Evaluator
             return EvalIntegerInfixExpression(@operator, leftInteger, rightInteger);
         }
 
+        if (left?.Type() != right?.Type())
+        {
+            return NewError($"type mismatch: {left?.Type()} {@operator} {right?.Type()}");
+        }
+
         return @operator switch
         {
             "==" => left == right ? TRUE : FALSE,
             "!=" => left != right ? TRUE : FALSE,
-            _ => NULL,
+            _ => NewError($"unknown operator: {left?.Type()} {@operator} {right?.Type()}"),
         };
     }
 
@@ -111,7 +158,7 @@ public class Evaluator
         {
             "!" => EvalBangOperatorExpression(right),
             "-" => EvalMinusOperatorExpression(right),
-            _ => NULL,
+            _ => NewError($"unknown operator: {@operator}{right?.Type()}"),
         };
     }
 
@@ -119,7 +166,7 @@ public class Evaluator
     {
         if (right is not Integer integer)
         {
-            return NULL;
+            return NewError($"unkown operator: -{right?.Type()}");
         }
 
         var value = integer.Value;
@@ -137,9 +184,9 @@ public class Evaluator
         };
     }
 
-    private static IObject? EvalProgram(IEnumerable<IStatement> statements)
+    private static IObject EvalProgram(IEnumerable<IStatement> statements)
     {
-        IObject? result = null;
+        IObject result = NULL;
 
         foreach (var statement in statements)
         {
@@ -147,10 +194,30 @@ public class Evaluator
 
             if (result is ReturnValue returnValue)
             {
-                return returnValue.Value;
+                return returnValue.Value ?? NULL;
+            }
+
+            if (result is Error error)
+            {
+                return result;
             }
         }
 
         return result;
+    }
+
+    private static Error NewError(string message)
+    {
+        return new Error { Message = message };
+    }
+
+    private static bool IsError(IObject @object)
+    {
+        if (@object != null)
+        {
+            return @object.Type() == ObjectType.Error;
+        }
+
+        return false;
     }
 }

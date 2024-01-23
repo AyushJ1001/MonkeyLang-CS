@@ -1,3 +1,4 @@
+using MonkeyLang;
 using MonkeyLang.Evalutation;
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing;
@@ -132,6 +133,30 @@ public class EvaluatorTest
         {
             var evaluated = TestEval(input);
             TestIntegerObject(evaluated, expected);
+        }
+    }
+
+    [Fact]
+    public void TestErrorHandling()
+    {
+        (string, string)[] tests = [
+            ("5 + true;", "type mismatch: Integer + Boolean"),
+            ("5 + true; 5;", "type mismatch: Integer + Boolean"),
+            ("-true", "unkown operator: -Boolean"),
+            ("true + false;", "unknown operator: Boolean + Boolean"),
+            ("5; true + false; 5", "unknown operator: Boolean + Boolean"),
+            ("if (10 > 1) { true + false; }", "unknown operator: Boolean + Boolean"),
+            ("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: Boolean + Boolean")
+        ];
+
+        foreach (var (input, expected) in tests)
+        {
+            var evaluated = TestEval(input);
+
+            Assert.IsType<Error>(evaluated);
+            var error = (Error)evaluated;
+            Assert.NotNull(evaluated);
+            Assert.Equal(expected, error.Message);
         }
     }
 
