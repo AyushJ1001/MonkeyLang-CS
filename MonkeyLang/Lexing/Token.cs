@@ -8,6 +8,7 @@ public enum TokenType
     // Identifiers + literals
     Ident,
     Int,
+    String,
 
     // Operators
     Assign,
@@ -73,6 +74,7 @@ public static class TokenTypeExtensions
             TokenType.If => "if",
             TokenType.Else => "else",
             TokenType.Return => "return",
+            TokenType.String => "String",
             _ => throw new ArgumentOutOfRangeException(nameof(tokenType), tokenType, null)
         };
     }

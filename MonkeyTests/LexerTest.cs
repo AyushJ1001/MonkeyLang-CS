@@ -26,6 +26,8 @@ public class LexerTest
                              
                              10 == 10;
                              10 != 9;
+                             "foobar"
+                             "foo bar"
                              """;
 
         var tests = new[]
@@ -103,7 +105,9 @@ public class LexerTest
             (TokenType.NotEq, "!="),
             (TokenType.Int, "9"),
             (TokenType.Semicolon, ";"),
-            (TokenType.Eof, "")
+            (TokenType.String, "foobar"),
+            (TokenType.String, "foo bar"),
+            (TokenType.Eof, ""),
         };
 
         var lexer = new Lexer(input);

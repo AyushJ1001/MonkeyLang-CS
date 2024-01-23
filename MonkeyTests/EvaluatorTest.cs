@@ -209,6 +209,19 @@ public class EvaluatorTest
             TestIntegerObject(TestEval(input), expected);
         }
     }
+
+    [Fact]
+    public void TestStringLiteral()
+    {
+        const string input = "\"Hello World!\"";
+
+        var evaluated = TestEval(input);
+        Assert.IsType<MonkeyLang.String>(evaluated);
+        var str = (MonkeyLang.String)evaluated;
+
+        Assert.Equal("Hello World!", str.Value);
+    }
+
     private static void TestNullObject(IObject? @object)
     {
         Assert.Equal(Evaluator.NULL, @object);

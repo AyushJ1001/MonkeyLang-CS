@@ -1,3 +1,4 @@
+using MonkeyLang;
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing;
 using MonkeyLang.Parsing.Expressions;
@@ -478,6 +479,28 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         TestLiteralExpression(expression.Arguments[0], 1);
         TestInfixExpression(expression.Arguments[1], 2, "*", 3);
         TestInfixExpression(expression.Arguments[2], 4, "+", 5);
+    }
+
+    [Fact]
+    public void TestStringLiteralExpression()
+    {
+        const string input = "\"hello world\";";
+
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<StringLiteral>(statement.Expression);
+        var literal = (StringLiteral)statement.Expression;
+
+        Assert.Equal("hello world", literal.Value);
     }
 
     private static void TestIdentifier(IExpression? expression, string value)

@@ -97,6 +97,8 @@ public class Evaluator
                 }
 
                 return ApplyFunction(function, args);
+            case StringLiteral stringLiteral:
+                return new String { Value = stringLiteral.Value };
             default:
                 return NULL;
         }

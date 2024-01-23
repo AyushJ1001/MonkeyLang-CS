@@ -94,6 +94,9 @@ public class Lexer
             case '\0':
                 token = new Token(TokenType.Eof, "");
                 break;
+            case '"':
+                token = new Token(TokenType.String, ReadString());
+                break;
             default:
                 if (IsLetter(_ch))
                 {
@@ -113,6 +116,21 @@ public class Lexer
 
         ReadChar();
         return token;
+    }
+
+    private string ReadString()
+    {
+        var position = _position + 1;
+        while (true)
+        {
+            ReadChar();
+            if (_ch == '"' || _ch == '\0')
+            {
+                break;
+            }
+        }
+
+        return _input[position.._position];
     }
 
     private string ReadNumber()

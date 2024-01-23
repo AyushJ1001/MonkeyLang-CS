@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing.Expressions;
 using MonkeyLang.Parsing.Statements;
@@ -61,6 +62,7 @@ public sealed class Parser
         RegisterPrefix(TokenType.Lparen, ParseGroupedExpression);
         RegisterPrefix(TokenType.If, ParseIfExpression);
         RegisterPrefix(TokenType.Function, ParseFunctionLiteral);
+        RegisterPrefix(TokenType.String, ParseStringLiteral);
 
         _infixParseFns = new Dictionary<TokenType, InfixParseFn>();
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -72,6 +74,11 @@ public sealed class Parser
         RegisterInfix(TokenType.Lt, ParseInfixExpression);
         RegisterInfix(TokenType.Gt, ParseInfixExpression);
         RegisterInfix(TokenType.Lparen, ParseCallExpression);
+    }
+
+    private IExpression? ParseStringLiteral()
+    {
+        return new StringLiteral { Token = _currentToken, Value = _currentToken.Literal };
     }
 
     private IExpression? ParseCallExpression(IExpression? function)
