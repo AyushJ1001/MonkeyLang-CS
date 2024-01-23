@@ -235,6 +235,36 @@ public class EvaluatorTest
         Assert.Equal("Hello World!", str.Value);
     }
 
+    [Fact]
+    public void TestBuiltinFunctions()
+    {
+        (string, object)[] tests = [
+            (@"len("""")", 0),
+            (@"len(""four"")", 4),
+            (@"len(""hello world"")", 11),
+            ("len(1)", @"argument to ""len"" not supported, got Integer"),
+            (@"len(""one"", ""two"")", @"wrong number of arguments. got=2, want=1")
+        ];
+
+        foreach (var (input, expected) in tests)
+        {
+            var evaluated = TestEval(input);
+
+            switch (expected)
+            {
+                case int integer:
+                    TestIntegerObject(evaluated, integer);
+                    break;
+                case string str:
+                    Assert.IsType<Error>(evaluated);
+                    var error = (Error)evaluated;
+
+                    Assert.Equal(str, error.Message);
+                    break;
+            }
+        }
+    }
+
     private static void TestNullObject(IObject? @object)
     {
         Assert.Equal(Evaluator.NULL, @object);

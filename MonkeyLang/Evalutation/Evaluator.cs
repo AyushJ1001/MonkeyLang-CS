@@ -106,14 +106,19 @@ public class Evaluator
 
     private static IObject ApplyFunction(IObject function, List<IObject> args)
     {
-        if (function is not Function fn)
-        {
-            return NewError($"not a function: {function.Type()}");
-        }
 
-        var extendedEnv = ExtendFunctionEnv(fn, args);
-        var evaluated = Eval(fn.Body, extendedEnv);
-        return UnwrapReturnValue(evaluated);
+        switch (function)
+        {
+            case Function fn:
+                var extendedEnv = ExtendFunctionEnv(fn, args);
+                var evaluated = Eval(fn.Body, extendedEnv);
+                return UnwrapReturnValue(evaluated);
+            case Builtin builtin:
+                return builtin.Fn([.. args]);
+            default:
+                return NewError($"not a function: {function.Type()}");
+
+        }
     }
 
     private static IObject UnwrapReturnValue(IObject obj)
@@ -160,13 +165,17 @@ public class Evaluator
 
     private static IObject EvalIdentifier(Identifier identifier, Environment env)
     {
-        var val = env.Get(identifier.Value ?? "");
-        if (val is null)
+        if (env.Get(identifier.Value ?? "") is IObject val)
         {
-            return NewError($"identifier not found: {identifier.Value}");
+            return val;
         }
 
-        return val;
+        if (Builtin.builtins.TryGetValue(identifier.Value ?? "", out var builtin))
+        {
+            return builtin;
+        }
+
+        return NewError($"identifier not found: {identifier.Value}");
     }
 
     private static IObject EvalBlockStatement(BlockStatement blockStatement, Environment env)
@@ -324,7 +333,7 @@ public class Evaluator
         return result;
     }
 
-    private static Error NewError(string message)
+    public static Error NewError(string message)
     {
         return new Error { Message = message };
     }

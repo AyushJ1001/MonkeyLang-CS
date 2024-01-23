@@ -8,7 +8,8 @@ public enum ObjectType
     ReturnValue,
     Error,
     Function,
-    String
+    String,
+    Builtin
 }
 
 public interface IObject
