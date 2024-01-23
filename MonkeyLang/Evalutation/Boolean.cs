@@ -1,6 +1,6 @@
 namespace MonkeyLang.Evalutation;
 
-public class Boolean: Object
+public class Boolean : IObject
 {
     public ObjectType Type()
     {

@@ -1,6 +1,6 @@
 namespace MonkeyLang.Evalutation;
 
-public class Integer: Object
+public class Integer : IObject
 {
     public long Value;
 

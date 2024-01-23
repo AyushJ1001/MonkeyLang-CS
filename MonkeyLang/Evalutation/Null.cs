@@ -1,6 +1,6 @@
 namespace MonkeyLang.Evalutation;
 
-public class Null: Object
+public class Null : IObject
 {
     public ObjectType Type()
     {

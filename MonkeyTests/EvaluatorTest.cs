@@ -2,7 +2,7 @@ using MonkeyLang.Evalutation;
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing;
 using Boolean = MonkeyLang.Evalutation.Boolean;
-using Object = MonkeyLang.Evalutation.Object;
+using IObject = MonkeyLang.Evalutation.IObject;
 
 namespace MonkeyTests;
 
@@ -117,12 +117,29 @@ public class EvaluatorTest
         }
     }
 
-    private static void TestNullObject(Object? @object)
+    [Fact]
+    public void TestReturnStatements()
+    {
+        (string, long)[] tests = [
+            ("return 10;", 10),
+            ("return 10; 9;", 10),
+            ("return 2 * 5; 9;", 10),
+            ("9; return 2 * 5; 9;", 10)
+        ];
+
+        foreach (var (input, expected) in tests)
+        {
+            var evaluated = TestEval(input);
+            TestIntegerObject(evaluated, expected);
+        }
+    }
+
+    private static void TestNullObject(IObject? @object)
     {
         Assert.Equal(Evaluator.NULL, @object);
     }
 
-    private static void TestBooleanObject(Object obj, bool expected)
+    private static void TestBooleanObject(IObject obj, bool expected)
     {
         Assert.IsType<Boolean>(obj);
         var result = (Boolean)obj;
@@ -130,7 +147,7 @@ public class EvaluatorTest
         Assert.Equal(expected, result.Value);
     }
 
-    private static void TestIntegerObject(Object? obj, long expected)
+    private static void TestIntegerObject(IObject? obj, long expected)
     {
         Assert.IsType<Integer>(obj);
         var result = (Integer)obj;
@@ -138,7 +155,7 @@ public class EvaluatorTest
         Assert.Equal(expected, result.Value);
     }
 
-    private static Object? TestEval(string input)
+    private static IObject? TestEval(string input)
     {
         Lexer lexer = new(input);
         Parser parser = new(lexer);

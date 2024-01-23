@@ -4,10 +4,11 @@ public enum ObjectType
 {
     Integer,
     Boolean,
-    Null
+    Null,
+    ReturnValue
 }
 
-public interface Object
+public interface IObject
 {
     ObjectType Type();
     string Inspect();

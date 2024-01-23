@@ -12,12 +12,12 @@ public class Evaluator
     public readonly static Boolean FALSE = new() { Value = false };
     public readonly static Null NULL = new();
 
-    public static Object? Eval(INode? node)
+    public static IObject? Eval(INode? node)
     {
         return node switch
         {
             // Statements
-            Parsing.Program program => EvalStatements(program.Statements),
+            Parsing.Program program => EvalProgram(program.Statements),
             ExpressionStatement expressionStatement => Eval(expressionStatement
                 .Expression),
             // Expressions
@@ -25,13 +25,31 @@ public class Evaluator
             Parsing.Expressions.Boolean boolean => boolean.Value ? TRUE : FALSE,
             PrefixExpression prefixExpression => EvalPrefixExpression(prefixExpression.Operator, Eval(prefixExpression.Right)),
             InfixExpression infixExpression => EvalInfixExpression(infixExpression.Operator, Eval(infixExpression.Left), Eval(infixExpression.Right)),
-            BlockStatement blockStatement => EvalStatements(blockStatement.Statements),
+            BlockStatement blockStatement => EvalBlockStatement(blockStatement),
             IfExpression ifExpression => EvalIfExpression(ifExpression),
+            ReturnStatement returnStatement => new ReturnValue { Value = Eval(returnStatement.ReturnValue) ?? NULL },
             _ => NULL
         };
     }
 
-    private static Object? EvalIfExpression(IfExpression ifExpression)
+    private static IObject EvalBlockStatement(BlockStatement blockStatement)
+    {
+        IObject? result = null;
+
+        foreach (var statement in blockStatement.Statements)
+        {
+            result = Eval(statement);
+
+            if (result != null && result.Type() == ObjectType.ReturnValue)
+            {
+                return result;
+            }
+        }
+
+        return result ?? NULL;
+    }
+
+    private static IObject? EvalIfExpression(IfExpression ifExpression)
     {
         var condition = Eval(ifExpression.Condition);
         if (IsTruthy(condition))
@@ -45,7 +63,7 @@ public class Evaluator
         return NULL;
     }
 
-    private static bool IsTruthy(Object? obj)
+    private static bool IsTruthy(IObject? obj)
     {
         return obj switch
         {
@@ -56,7 +74,7 @@ public class Evaluator
         };
     }
 
-    private static Object EvalInfixExpression(string @operator, Object? left, Object? right)
+    private static IObject EvalInfixExpression(string @operator, IObject? left, IObject? right)
     {
         if (left is Integer leftInteger && right is Integer rightInteger)
         {
@@ -71,7 +89,7 @@ public class Evaluator
         };
     }
 
-    private static Object EvalIntegerInfixExpression(string @operator, Integer leftInteger, Integer rightInteger)
+    private static IObject EvalIntegerInfixExpression(string @operator, Integer leftInteger, Integer rightInteger)
     {
         return @operator switch
         {
@@ -87,7 +105,7 @@ public class Evaluator
         };
     }
 
-    private static Object EvalPrefixExpression(string @operator, Object? right)
+    private static IObject EvalPrefixExpression(string @operator, IObject? right)
     {
         return @operator switch
         {
@@ -97,7 +115,7 @@ public class Evaluator
         };
     }
 
-    private static Object EvalMinusOperatorExpression(Object? right)
+    private static IObject EvalMinusOperatorExpression(IObject? right)
     {
         if (right is not Integer integer)
         {
@@ -108,7 +126,7 @@ public class Evaluator
         return new Integer { Value = -value };
     }
 
-    private static Boolean EvalBangOperatorExpression(Object? right)
+    private static Boolean EvalBangOperatorExpression(IObject? right)
     {
         return right switch
         {
@@ -119,13 +137,18 @@ public class Evaluator
         };
     }
 
-    private static Object? EvalStatements(IEnumerable<IStatement> statements)
+    private static IObject? EvalProgram(IEnumerable<IStatement> statements)
     {
-        Object? result = null;
+        IObject? result = null;
 
         foreach (var statement in statements)
         {
             result = Eval(statement);
+
+            if (result is ReturnValue returnValue)
+            {
+                return returnValue.Value;
+            }
         }
 
         return result;
