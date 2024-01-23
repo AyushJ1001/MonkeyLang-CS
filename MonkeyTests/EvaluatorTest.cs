@@ -66,6 +66,7 @@ public class EvaluatorTest
         foreach (var (input, expected) in tests)
         {
             var evaluated = TestEval(input);
+            Assert.NotNull(evaluated);
             TestBooleanObject(evaluated, expected);
         }
     }
@@ -93,7 +94,7 @@ public class EvaluatorTest
     [Fact]
     public void TestIfElseExpressions()
     {
-        (string, object)[] tests = [
+        (string, int?)[] tests = [
             ("if (true) { 10 }", 10),
             ("if (false) { 10 } ", null),
             ("if (1) { 10 }", 10),

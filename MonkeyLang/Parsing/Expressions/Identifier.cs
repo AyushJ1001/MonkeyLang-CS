@@ -5,7 +5,7 @@ namespace MonkeyLang.Parsing.Expressions;
 public class Identifier : IExpression
 {
     public Token Token;
-    public string Value;
+    public string? Value;
 
     public string TokenLiteral()
     {
@@ -18,6 +18,6 @@ public class Identifier : IExpression
 
     public override string ToString()
     {
-        return Value;
+        return Value ?? "";
     }
 }

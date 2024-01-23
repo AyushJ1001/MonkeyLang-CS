@@ -4,11 +4,11 @@ namespace MonkeyLang;
 
 public class ReturnValue : IObject
 {
-    public IObject Value { get; set; }
+    public IObject? Value { get; set; }
 
     public string Inspect()
     {
-        return Value.Inspect();
+        return Value?.Inspect() ?? "";
     }
 
     public ObjectType Type()

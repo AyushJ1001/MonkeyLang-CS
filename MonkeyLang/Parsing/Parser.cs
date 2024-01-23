@@ -138,7 +138,8 @@ public sealed class Parser
 
         var ident = new Identifier
         {
-            Token = _currentToken, Value =
+            Token = _currentToken,
+            Value =
                 _currentToken.Literal
         };
         identifiers.Add(ident);
@@ -457,7 +458,7 @@ public sealed class Parser
             literal.Value = value;
             return literal;
         }
-        catch (Exception e)
+        catch (Exception)
         {
             _errors.Add($"Could not parse {_currentToken.Literal} as integer");
             return null;

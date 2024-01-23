@@ -10,8 +10,6 @@ namespace MonkeyTests;
 
 public class ParserTest(ITestOutputHelper testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
-
     [Fact]
     public void TestLetStatements()
     {
@@ -405,11 +403,13 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         Assert.IsType<FunctionLiteral>(statement.Expression);
         var function = (FunctionLiteral)statement.Expression;
 
+        Assert.NotNull(function.Parameters);
         Assert.Equal(2, function.Parameters.Count);
 
         TestLiteralExpression(function.Parameters[0], "x");
         TestLiteralExpression(function.Parameters[1], "y");
 
+        Assert.NotNull(function.Body);
         Assert.Equal(1, function.Body.Statements.Count);
         Assert.IsType<ExpressionStatement>(function.Body.Statements[0]);
         var bodyStatement = (ExpressionStatement)function.Body.Statements[0];
@@ -472,6 +472,7 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         var expression = (CallExpression)statement.Expression;
 
         TestIdentifier(expression.Function, "add");
+        Assert.NotNull(expression.Arguments);
         Assert.Equal(3, expression.Arguments.Count);
 
         TestLiteralExpression(expression.Arguments[0], 1);

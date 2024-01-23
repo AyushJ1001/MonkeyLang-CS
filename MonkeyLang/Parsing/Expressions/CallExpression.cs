@@ -2,7 +2,7 @@ using MonkeyLang.Lexing;
 
 namespace MonkeyLang.Parsing.Expressions;
 
-public class CallExpression: IExpression
+public class CallExpression : IExpression
 {
     public Token Token;
     public IExpression? Function;
@@ -19,7 +19,7 @@ public class CallExpression: IExpression
 
     public override string ToString()
     {
-        var args = Arguments.Select(arg => arg.ToString());
+        var args = Arguments?.Select(arg => arg?.ToString()) ?? new List<string>();
 
         return $"{Function}({string.Join(", ", args)})";
     }

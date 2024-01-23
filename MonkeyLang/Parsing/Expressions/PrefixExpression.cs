@@ -3,10 +3,10 @@ using MonkeyLang.Lexing;
 
 namespace MonkeyLang.Parsing.Expressions;
 
-public class PrefixExpression: IExpression
+public class PrefixExpression : IExpression
 {
     public Token Token;
-    public string Operator;
+    public string Operator = "";
     public IExpression? Right;
     public string TokenLiteral()
     {

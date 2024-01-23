@@ -4,7 +4,7 @@ using MonkeyLang.Parsing.Statements;
 
 namespace MonkeyLang.Parsing.Expressions;
 
-public class FunctionLiteral: IExpression
+public class FunctionLiteral : IExpression
 {
     public Token Token;
     public IList<Identifier>? Parameters;
@@ -20,7 +20,7 @@ public class FunctionLiteral: IExpression
 
     public override string ToString()
     {
-        var paramsList = Parameters.Select(p => p.ToString());
+        var paramsList = Parameters?.Select(p => p.ToString()) ?? new List<string>();
         return $"{TokenLiteral()}({string.Join(", ", paramsList)}) {Body}";
     }
 }

@@ -2,11 +2,11 @@ using MonkeyLang.Lexing;
 
 namespace MonkeyLang.Parsing.Expressions;
 
-public class InfixExpression: IExpression
+public class InfixExpression : IExpression
 {
     public Token Token;
     public IExpression? Left;
-    public string Operator;
+    public string Operator = "";
     public IExpression? Right;
 
     public string TokenLiteral()
