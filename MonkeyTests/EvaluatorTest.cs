@@ -147,7 +147,8 @@ public class EvaluatorTest
             ("5; true + false; 5", "unknown operator: Boolean + Boolean"),
             ("if (10 > 1) { true + false; }", "unknown operator: Boolean + Boolean"),
             ("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: Boolean + Boolean"),
-            ("foobar", "identifier not found: foobar")
+            ("foobar", "identifier not found: foobar"),
+            (@"""Hello"" - ""World""", "unknown operator: String - String"),
         ];
 
         foreach (var (input, expected) in tests)
@@ -214,6 +215,18 @@ public class EvaluatorTest
     public void TestStringLiteral()
     {
         const string input = "\"Hello World!\"";
+
+        var evaluated = TestEval(input);
+        Assert.IsType<MonkeyLang.String>(evaluated);
+        var str = (MonkeyLang.String)evaluated;
+
+        Assert.Equal("Hello World!", str.Value);
+    }
+
+    [Fact]
+    public void TestStringConcatenation()
+    {
+        const string input = @"""Hello"" + "" "" + ""World!""";
 
         var evaluated = TestEval(input);
         Assert.IsType<MonkeyLang.String>(evaluated);

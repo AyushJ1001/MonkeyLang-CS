@@ -229,12 +229,29 @@ public class Evaluator
             return NewError($"type mismatch: {left?.Type()} {@operator} {right?.Type()}");
         }
 
+        if (left?.Type() == ObjectType.String)
+        {
+            return EvalStringInfixExpression(@operator, left, right);
+        }
+
         return @operator switch
         {
             "==" => left == right ? TRUE : FALSE,
             "!=" => left != right ? TRUE : FALSE,
             _ => NewError($"unknown operator: {left?.Type()} {@operator} {right?.Type()}"),
         };
+    }
+
+    private static IObject EvalStringInfixExpression(string @operator, IObject left, IObject right)
+    {
+        if (@operator != "+")
+        {
+            return NewError($"unknown operator: {left.Type()} {@operator} {right?.Type()}");
+        }
+
+        var leftVal = ((String)left).Value;
+        var rightVal = ((String)right).Value;
+        return new String { Value = leftVal + rightVal };
     }
 
     private static IObject EvalIntegerInfixExpression(string @operator, Integer leftInteger, Integer rightInteger)
