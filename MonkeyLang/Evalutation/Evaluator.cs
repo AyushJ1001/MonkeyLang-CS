@@ -6,6 +6,14 @@ using MonkeyLang.Parsing.Statements;
 
 namespace MonkeyLang.Evalutation;
 
+using System.Collections.Generic;
+
+public static class IEnumerableExtensions
+{
+    public static IEnumerable<(T item, int index)> WithIndex<T>(this IEnumerable<T> self)
+       => self.Select((item, index) => (item, index));
+}
+
 public class Evaluator
 {
     public readonly static Boolean TRUE = new() { Value = true };
@@ -72,9 +80,80 @@ public class Evaluator
                 return env.Set(letStatement.Name?.Value ?? "", val);
             case Identifier identifier:
                 return EvalIdentifier(identifier, env);
+            case FunctionLiteral functionLiteral:
+                var parameters = functionLiteral.Parameters ?? [];
+                var body = functionLiteral.Body ?? new();
+                return new Function { Parameters = parameters, Body = body, Env = env };
+            case CallExpression call:
+                var function = Eval(call.Function, env);
+                if (IsError(function))
+                {
+                    return function;
+                }
+                var args = EvalExpressions(call.Arguments, env);
+                if (args.Count == 1 && IsError(args[0]))
+                {
+                    return args[0];
+                }
+
+                return ApplyFunction(function, args);
             default:
                 return NULL;
         }
+    }
+
+    private static IObject ApplyFunction(IObject function, List<IObject> args)
+    {
+        if (function is not Function fn)
+        {
+            return NewError($"not a function: {function.Type()}");
+        }
+
+        var extendedEnv = ExtendFunctionEnv(fn, args);
+        var evaluated = Eval(fn.Body, extendedEnv);
+        return UnwrapReturnValue(evaluated);
+    }
+
+    private static IObject UnwrapReturnValue(IObject obj)
+    {
+        if (obj is ReturnValue returnValue)
+        {
+            return returnValue.Value ?? obj;
+        }
+
+        return obj;
+    }
+
+    private static Environment ExtendFunctionEnv(Function fn, List<IObject> args)
+    {
+        var env = fn.Env.NewEnclosedEnvironment();
+        foreach (var (param, paramIdx) in fn.Parameters.WithIndex())
+        {
+            if (param.Value is not null)
+            {
+                _ = env.Set(param.Value, args[paramIdx]);
+            }
+        }
+
+        return env;
+    }
+
+    private static List<IObject> EvalExpressions(IList<IExpression?>? expressions, Environment env)
+    {
+        var result = new List<IObject>();
+        expressions ??= [];
+
+        foreach (var exp in expressions)
+        {
+            var evaluated = Eval(exp, env);
+            if (IsError(evaluated))
+            {
+                return [evaluated];
+            }
+            result.Add(evaluated);
+        }
+
+        return result;
     }
 
     private static IObject EvalIdentifier(Identifier identifier, Environment env)

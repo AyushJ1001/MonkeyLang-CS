@@ -176,6 +176,39 @@ public class EvaluatorTest
             TestIntegerObject(TestEval(input), expected);
         }
     }
+
+
+    [Fact]
+    public void TestFunctionObject()
+    {
+        const string input = "fn(x) { x + 2; };";
+
+        var evaluated = TestEval(input);
+        Assert.IsType<Function>(evaluated);
+        var function = (Function)evaluated;
+
+        Assert.Single(function.Parameters);
+        Assert.Equal("x", function.Parameters[0].ToString());
+
+        Assert.Equal("(x + 2)", function.Body.ToString());
+    }
+
+    [Fact]
+    public void TestFunctionApplication()
+    {
+        (string, long)[] tests = [
+            ("let identity = fn(x) {x;}; identity(5);", 5),
+            ("let identity = fn(x) { return x;}; identity(5); ", 5),
+            ("let double = fn(x) {x * 2;}; double(5);", 10),
+            ("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20),
+            ("fn(x) {x;}(5)", 5),
+        ];
+
+        foreach (var (input, expected) in tests)
+        {
+            TestIntegerObject(TestEval(input), expected);
+        }
+    }
     private static void TestNullObject(IObject? @object)
     {
         Assert.Equal(Evaluator.NULL, @object);

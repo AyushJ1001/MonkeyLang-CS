@@ -2,23 +2,38 @@
 
 namespace MonkeyLang;
 
-public struct Environment
+public class Environment
 {
-    private readonly Dictionary<string, IObject> Store;
+    private Dictionary<string, IObject> Store;
+    private Environment? Outer;
 
     public Environment()
     {
         Store = [];
+        Outer = null;
     }
 
-    public readonly IObject? Get(string name)
+    public IObject? Get(string name)
     {
-        return Store.TryGetValue(name, out IObject? value) ? value : null;
+        if (Store.TryGetValue(name, out var obj))
+        {
+            return obj;
+        }
+
+        return Outer?.Get(name);
     }
 
-    public readonly IObject Set(string name, IObject value)
+    public IObject Set(string name, IObject value)
     {
         Store[name] = value;
         return value;
+    }
+
+    public Environment NewEnclosedEnvironment()
+    {
+        return new Environment
+        {
+            Outer = this
+        };
     }
 }

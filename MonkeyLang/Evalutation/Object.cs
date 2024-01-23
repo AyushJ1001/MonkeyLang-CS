@@ -6,7 +6,8 @@ public enum ObjectType
     Boolean,
     Null,
     ReturnValue,
-    Error
+    Error,
+    Function
 }
 
 public interface IObject
