@@ -9,7 +9,7 @@ public class Boolean: Object
 
     public string Inspect()
     {
-        return Value.ToString();
+        return Value.ToString().ToLower();
     }
 
     public bool Value { get; set; }

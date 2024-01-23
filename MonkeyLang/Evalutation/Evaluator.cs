@@ -6,6 +6,10 @@ namespace MonkeyLang.Evalutation;
 
 public class Evaluator
 {
+    public static Boolean TRUE = new Boolean { Value = true };
+    public static Boolean FALSE = new Boolean { Value = false };
+    public static Null NULL = new Null();
+
     public static Object? Eval(INode? node)
     {
         return node switch
@@ -16,7 +20,8 @@ public class Evaluator
                 .Expression),
             // Expressions
             IntegerLiteral literal => new Integer { Value = literal.Value },
-            _ => null
+            Parsing.Expressions.Boolean boolean => boolean.Value ? TRUE : FALSE,
+            _ => NULL
         };
     }
 

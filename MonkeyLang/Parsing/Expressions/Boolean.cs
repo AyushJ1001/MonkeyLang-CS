@@ -8,7 +8,7 @@ public class Boolean: IExpression
     public bool Value;
     public string TokenLiteral()
     {
-        return Token.Literal;
+        return Token.Literal.ToLower();
     }
 
     public void ExpressionNode()
@@ -17,6 +17,6 @@ public class Boolean: IExpression
 
     public override string ToString()
     {
-        return Token.Literal;
+        return Token.Literal.ToLower();
     }
 }

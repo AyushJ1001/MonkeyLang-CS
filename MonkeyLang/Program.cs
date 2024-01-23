@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using MonkeyLang.Evalutation;
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing;
 const string MONKEY_FACE = """"""""
@@ -45,7 +46,10 @@ void Start()
             continue;
         }
 
-        Console.WriteLine(program);
+        var evaluated = Evaluator.Eval(program);
+        if (evaluated == null) continue;
+
+        Console.WriteLine(evaluated.Inspect());
     }
 }
 
