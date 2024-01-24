@@ -17,7 +17,8 @@ internal enum Precedence
     Sum, // +
     Product, // *
     Prefix, // -X or !X
-    Call // myFunction(X)
+    Call, // myFunction(X)
+    Index // array[index]
 }
 
 public sealed class Parser
@@ -38,7 +39,8 @@ public sealed class Parser
             { TokenType.Minus, Precedence.Sum },
             { TokenType.Slash, Precedence.Product },
             { TokenType.Asterisk, Precedence.Product },
-            { TokenType.Lparen, Precedence.Call }
+            { TokenType.Lparen, Precedence.Call },
+            { TokenType.Lbracket , Precedence.Index},
         };
 
     private readonly Dictionary<TokenType, PrefixParseFn> _prefixParseFns;
@@ -63,6 +65,7 @@ public sealed class Parser
         RegisterPrefix(TokenType.If, ParseIfExpression);
         RegisterPrefix(TokenType.Function, ParseFunctionLiteral);
         RegisterPrefix(TokenType.String, ParseStringLiteral);
+        RegisterPrefix(TokenType.Lbracket, ParseArrayLiteral);
 
         _infixParseFns = new Dictionary<TokenType, InfixParseFn>();
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -74,11 +77,61 @@ public sealed class Parser
         RegisterInfix(TokenType.Lt, ParseInfixExpression);
         RegisterInfix(TokenType.Gt, ParseInfixExpression);
         RegisterInfix(TokenType.Lparen, ParseCallExpression);
+        RegisterInfix(TokenType.Lbracket, ParseIndexExpression);
+    }
+
+    private IExpression? ParseIndexExpression(IExpression? left)
+    {
+        IndexExpression exp = new()
+        {
+            Token = _currentToken,
+            Left = left
+        };
+
+        NextToken();
+        exp.Index = ParseExpression(Precedence.Lowest);
+
+        return !ExpectPeek(TokenType.Rbracket) ? null : exp;
+    }
+
+    private IExpression? ParseArrayLiteral()
+    {
+        var array = new ArrayLiteral
+        {
+            Token = _currentToken,
+            Elements = ParseExpressionList(TokenType.Rbracket)
+        };
+
+        return array;
+    }
+
+    private List<IExpression>? ParseExpressionList(TokenType end)
+    {
+        var list = new List<IExpression?>();
+
+        if (_peekToken.TokenType == end)
+        {
+            NextToken();
+            return list;
+        }
+
+        NextToken();
+        list.Add(ParseExpression(Precedence.Lowest));
+
+        while (_peekToken.TokenType == TokenType.Comma)
+        {
+            NextToken();
+            NextToken();
+            list.Add(ParseExpression(Precedence.Lowest));
+        }
+
+        return !ExpectPeek(end) ? null : list;
     }
 
     private IExpression? ParseStringLiteral()
     {
-        return new StringLiteral { Token = _currentToken, Value = _currentToken.Literal };
+        return new StringLiteral
+            { Token = _currentToken, Value = _currentToken.Literal };
     }
 
     private IExpression? ParseCallExpression(IExpression? function)
@@ -87,7 +140,7 @@ public sealed class Parser
         {
             Token = _currentToken,
             Function = function,
-            Arguments = ParseCallArguments()
+            Arguments = ParseExpressionList(TokenType.Rparen)
         };
 
         return expression;
@@ -230,7 +283,7 @@ public sealed class Parser
         return block;
     }
 
-    private IExpression? ParseGroupedExpression()
+    private IExpression ParseGroupedExpression()
     {
         NextToken();
 

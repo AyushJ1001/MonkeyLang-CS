@@ -59,25 +59,13 @@ public class Evaluator
                 return EvalBlockStatement(blockStatement, env);
             case IfExpression ifExpression:
                 var condition = Eval(ifExpression.Condition, env);
-                if (IsError(condition))
-                {
-                    return condition;
-                }
-                return EvalIfExpression(ifExpression, env);
+                return IsError(condition) ? condition : EvalIfExpression(ifExpression, env);
             case ReturnStatement returnStatement:
                 var val = Eval(returnStatement.ReturnValue, env);
-                if (IsError(val))
-                {
-                    return val;
-                }
-                return new ReturnValue { Value = val };
+                return IsError(val) ? val : new ReturnValue { Value = val };
             case LetStatement letStatement:
                 val = Eval(letStatement.Value, env);
-                if (IsError(val))
-                {
-                    return val;
-                }
-                return env.Set(letStatement.Name?.Value ?? "", val);
+                return IsError(val) ? val : env.Set(letStatement.Name?.Value ?? "", val);
             case Identifier identifier:
                 return EvalIdentifier(identifier, env);
             case FunctionLiteral functionLiteral:
@@ -99,9 +87,56 @@ public class Evaluator
                 return ApplyFunction(function, args);
             case StringLiteral stringLiteral:
                 return new String { Value = stringLiteral.Value };
+            case ArrayLiteral arrayLiteral:
+                var elements = EvalExpressions(arrayLiteral.Elements, env);
+                if (elements.Count == 1 && IsError(elements[0]))
+                {
+                    return elements[0];
+                }
+                return new Array { Elements = elements };
+            case IndexExpression indexExpression:
+                left = Eval(indexExpression.Left, env);
+                if (IsError(left))
+                {
+                    return left;
+                }
+
+                var index = Eval(indexExpression.Index, env);
+                if (IsError(index))
+                {
+                    return index;
+                }
+
+                return EvalIndexExpression(left, index);
             default:
                 return NULL;
         }
+    }
+
+    private static IObject EvalIndexExpression(IObject left, IObject index)
+    {
+        if (left.Type() == ObjectType.Array &&
+            index.Type() == ObjectType.Integer)
+        {
+            return EvalArrayIndexExpression(left, index);
+        }
+
+        return NewError($"index operator not supported: {left.Type()}");
+    }
+
+    private static IObject EvalArrayIndexExpression(IObject array, IObject
+            index)
+    {
+        var arrayObject = (Array)array;
+        var idx = ((Integer)index).Value;
+        var max = (long)(arrayObject.Elements.Count - 1);
+
+        if (idx < 0 || idx > max)
+        {
+            return NULL;
+        }
+
+        return arrayObject.Elements[(int)idx];
     }
 
     private static IObject ApplyFunction(IObject function, List<IObject> args)
@@ -136,16 +171,18 @@ public class Evaluator
         var env = fn.Env.NewEnclosedEnvironment();
         foreach (var (param, paramIdx) in fn.Parameters.WithIndex())
         {
-            if (param.Value is not null)
+            if (param.Value is null) continue;
+            if (paramIdx >= args.Count)
             {
-                _ = env.Set(param.Value, args[paramIdx]);
+                continue;
             }
+            _ = env.Set(param.Value, args[paramIdx]);
         }
 
         return env;
     }
 
-    private static List<IObject> EvalExpressions(IList<IExpression?>? expressions, Environment env)
+    private static List<IObject> EvalExpressions(IList<IExpression>? expressions, Environment env)
     {
         var result = new List<IObject>();
         expressions ??= [];
@@ -186,16 +223,9 @@ public class Evaluator
         {
             result = Eval(statement, env);
 
-            if (result != null)
-            {
-                var rt = result.Type();
-                if (rt == ObjectType.ReturnValue || rt == ObjectType.Error)
-                {
-                    return result;
-                }
-
-                return result;
-            }
+            if (result is not (ReturnValue or Error)) continue;
+            var rt = result.Type();
+            return result;
         }
 
         return result ?? NULL;
@@ -311,7 +341,7 @@ public class Evaluator
         };
     }
 
-    private static IObject EvalProgram(IEnumerable<IStatement> statements, Environment env)
+    private static IObject EvalProgram(IEnumerable<IStatement?> statements, Environment env)
     {
         IObject result = NULL;
 

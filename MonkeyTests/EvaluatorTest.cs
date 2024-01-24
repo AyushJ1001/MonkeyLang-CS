@@ -2,6 +2,7 @@ using MonkeyLang;
 using MonkeyLang.Evalutation;
 using MonkeyLang.Lexing;
 using MonkeyLang.Parsing;
+using Array = MonkeyLang.Evalutation.Array;
 using Boolean = MonkeyLang.Evalutation.Boolean;
 using IObject = MonkeyLang.Evalutation.IObject;
 
@@ -75,7 +76,8 @@ public class EvaluatorTest
     [Fact]
     public void TestBangOperator()
     {
-        (string, bool)[] tests = [
+        (string, bool)[] tests =
+        [
             ("!true", false),
             ("!false", true),
             ("!5", false),
@@ -95,7 +97,8 @@ public class EvaluatorTest
     [Fact]
     public void TestIfElseExpressions()
     {
-        (string, int?)[] tests = [
+        (string, int?)[] tests =
+        [
             ("if (true) { 10 }", 10),
             ("if (false) { 10 } ", null),
             ("if (1) { 10 }", 10),
@@ -122,7 +125,8 @@ public class EvaluatorTest
     [Fact]
     public void TestReturnStatements()
     {
-        (string, long)[] tests = [
+        (string, long)[] tests =
+        [
             ("return 10;", 10),
             ("return 10; 9;", 10),
             ("return 2 * 5; 9;", 10),
@@ -139,14 +143,17 @@ public class EvaluatorTest
     [Fact]
     public void TestErrorHandling()
     {
-        (string, string)[] tests = [
+        (string, string)[] tests =
+        [
             ("5 + true;", "type mismatch: Integer + Boolean"),
             ("5 + true; 5;", "type mismatch: Integer + Boolean"),
             ("-true", "unkown operator: -Boolean"),
             ("true + false;", "unknown operator: Boolean + Boolean"),
             ("5; true + false; 5", "unknown operator: Boolean + Boolean"),
-            ("if (10 > 1) { true + false; }", "unknown operator: Boolean + Boolean"),
-            ("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: Boolean + Boolean"),
+            ("if (10 > 1) { true + false; }",
+                "unknown operator: Boolean + Boolean"),
+            ("if (10 > 1) { if (10 > 1) { return true + false; } return 1; }",
+                "unknown operator: Boolean + Boolean"),
             ("foobar", "identifier not found: foobar"),
             (@"""Hello"" - ""World""", "unknown operator: String - String"),
         ];
@@ -165,7 +172,8 @@ public class EvaluatorTest
     [Fact]
     public void TestLetStatements()
     {
-        (string, long)[] tests = [
+        (string, long)[] tests =
+        [
             ("let a = 5; a;", 5),
             ("let a = 5 * 5; a;", 25),
             ("let a = 5; let b = a; b;", 5),
@@ -197,7 +205,8 @@ public class EvaluatorTest
     [Fact]
     public void TestFunctionApplication()
     {
-        (string, long)[] tests = [
+        (string, long)[] tests =
+        [
             ("let identity = fn(x) {x;}; identity(5);", 5),
             ("let identity = fn(x) { return x;}; identity(5); ", 5),
             ("let double = fn(x) {x * 2;}; double(5);", 10),
@@ -238,12 +247,14 @@ public class EvaluatorTest
     [Fact]
     public void TestBuiltinFunctions()
     {
-        (string, object)[] tests = [
+        (string, object)[] tests =
+        [
             (@"len("""")", 0),
             (@"len(""four"")", 4),
             (@"len(""hello world"")", 11),
             ("len(1)", @"argument to ""len"" not supported, got Integer"),
-            (@"len(""one"", ""two"")", @"wrong number of arguments. got=2, want=1")
+            (@"len(""one"", ""two"")",
+                @"wrong number of arguments. got=2, want=1")
         ];
 
         foreach (var (input, expected) in tests)
@@ -261,6 +272,60 @@ public class EvaluatorTest
 
                     Assert.Equal(str, error.Message);
                     break;
+            }
+        }
+    }
+
+    [Fact]
+    public void TestArrayLiterals()
+    {
+        const string input = "[1, 2 * 2, 3 + 3]";
+
+        var evaluated = TestEval(input);
+        Assert.IsType<Array>(evaluated);
+        var result = (Array)evaluated;
+
+        Assert.Equal(3, result.Elements.Count);
+
+        TestIntegerObject(result.Elements[0], 1);
+        TestIntegerObject(result.Elements[1], 4);
+        TestIntegerObject(result.Elements[2], 6);
+    }
+
+    [Fact]
+    public void TestArrayIndexExpressions()
+    {
+        (string, object)[] tests =
+        [
+            ("[1, 2, 3][0]", 1),
+            ("[1, 2, 3][1]", 2),
+            ("[1, 2, 3][2]", 3),
+            ("let i = 0; [1][i];", 1),
+            ("[1, 2, 3][1 + 1];", 3),
+            ("let myArray = [1, 2, 3]; myArray[2];", 3),
+            (
+                "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+                6
+            ),
+            (
+                "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+                2
+            ),
+            ("[1, 2, 3][3]", null),
+            ("[1, 2, 3][-1]", null),
+        ];
+
+        foreach (var (input, expected) in tests)
+        {
+            var evaluated = TestEval(input);
+
+            if (expected is int integer)
+            {
+                TestIntegerObject(evaluated, integer);
+            }
+            else
+            {
+                TestNullObject(evaluated);
             }
         }
     }

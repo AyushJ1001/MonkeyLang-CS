@@ -9,7 +9,8 @@ public enum ObjectType
     Error,
     Function,
     String,
-    Builtin
+    Builtin,
+    Array
 }
 
 public interface IObject

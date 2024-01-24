@@ -48,7 +48,7 @@ void Start()
         }
 
         var evaluated = Evaluator.Eval(program, environment);
-        if (evaluated == null) continue;
+
 
         Console.WriteLine(evaluated.Inspect());
     }

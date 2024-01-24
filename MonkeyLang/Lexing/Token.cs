@@ -30,6 +30,8 @@ public enum TokenType
     Rparen,
     Lbrace,
     Rbrace,
+    Lbracket,
+    Rbracket,
 
     // Keywords
     Function,
@@ -67,6 +69,8 @@ public static class TokenTypeExtensions
             TokenType.Rparen => ")",
             TokenType.Lbrace => "{",
             TokenType.Rbrace => "}",
+            TokenType.Lbracket => "[",
+            TokenType.Rbracket => "]",
             TokenType.Function => "function",
             TokenType.Let => "let",
             TokenType.True => "true",

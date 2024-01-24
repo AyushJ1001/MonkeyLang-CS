@@ -7,7 +7,7 @@ namespace MonkeyLang;
 public class Function : IObject
 {
     public IList<Identifier> Parameters = [];
-    public BlockStatement Body = new();
+    public BlockStatement? Body = new();
     public Environment Env = new();
 
     public string Inspect()

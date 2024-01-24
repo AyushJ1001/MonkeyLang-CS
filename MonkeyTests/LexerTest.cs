@@ -28,6 +28,7 @@ public class LexerTest
                              10 != 9;
                              "foobar"
                              "foo bar"
+                             [1, 2];
                              """;
 
         var tests = new[]
@@ -107,7 +108,13 @@ public class LexerTest
             (TokenType.Semicolon, ";"),
             (TokenType.String, "foobar"),
             (TokenType.String, "foo bar"),
-            (TokenType.Eof, ""),
+            (TokenType.Lbracket, "["),
+            (TokenType.Int, "1"),
+            (TokenType.Comma, ","),
+            (TokenType.Int, "2"),
+            (TokenType.Rbracket, "]"),
+            (TokenType.Semicolon, ";"),
+            (TokenType.Eof, "")
         };
 
         var lexer = new Lexer(input);

@@ -285,7 +285,15 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
             ("(5 + 5) * 2", "((5 + 5) * 2)"),
             ("2 / (5 + 5)", "(2 / (5 + 5))"),
             ("-(5 + 5)", "(-(5 + 5))"),
-            ("!(true == true)", "(!(true == true))")
+            ("!(true == true)", "(!(true == true))"),
+            (
+                "a * [1, 2, 3, 4][b * c] * d",
+                "((a * ([1, 2, 3, 4][(b * c)])) * d)"
+            ),
+            (
+                "add(a * b[2], b[1], 2 * [1, 2][1])",
+                "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"
+            ),
         };
 
         foreach (var (input, expected) in tests)
@@ -503,6 +511,53 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         Assert.Equal("hello world", literal.Value);
     }
 
+    [Fact]
+    public void TestParsingArrayLiterals()
+    {
+        const string input = "[1, 2 * 2, 3 + 3]";
+
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<ArrayLiteral>(statement.Expression);
+        var array = (ArrayLiteral)statement.Expression;
+
+        Assert.Equal(3, array.Elements.Count);
+        TestIntegerLiteral(array.Elements[0], 1);
+        TestInfixExpression(array.Elements[1], 2, "*", 2);
+        TestInfixExpression(array.Elements[2], 3, "+", 3);
+    }
+
+    [Fact]
+    public void TestParsingIndexExpressions()
+    {
+        const string input = "myArray[1 + 1]";
+
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+        var program = parser.ParseProgram();
+        CheckParserErrors(parser);
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+        Assert.IsType<ExpressionStatement>(program.Statements[0]);
+        var statement = (ExpressionStatement)program.Statements[0];
+
+        Assert.IsType<IndexExpression>(statement.Expression);
+        var indexExp = (IndexExpression)statement.Expression;
+
+        TestIdentifier(indexExp.Left, "myArray");
+        TestInfixExpression(indexExp.Index, 1, "+", 1);
+    }
+
     private static void TestIdentifier(IExpression? expression, string value)
     {
         Assert.IsType<Identifier>(expression);
@@ -568,7 +623,7 @@ public class ParserTest(ITestOutputHelper testOutputHelper)
         throw new Exception("Parser has errors");
     }
 
-    private static bool TestLetStatement(INode statement, string name)
+    private static bool TestLetStatement(INode? statement, string name)
     {
         if (statement.TokenLiteral() != "let")
         {

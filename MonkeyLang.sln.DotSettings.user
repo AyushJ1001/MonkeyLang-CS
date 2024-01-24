@@ -4,11 +4,11 @@
 	
 	
 	
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=f3304349_002Dff24_002D4df3_002Da9dd_002D5c53693491ce/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TestNextToken" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;TestAncestor&gt;
-    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.LexerTest.TestNextToken&lt;/TestId&gt;
-    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.ParserTest&lt;/TestId&gt;
-    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.AstTest.TestString&lt;/TestId&gt;
-    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.EvaluatorTest&lt;/TestId&gt;
-  &lt;/TestAncestor&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=f3304349_002Dff24_002D4df3_002Da9dd_002D5c53693491ce/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TestNextToken" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.LexerTest.TestNextToken&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.ParserTest&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.AstTest.TestString&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::E0940211-F236-4493-90FD-B9993DB0BDA6::net8.0::MonkeyTests.EvaluatorTest&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

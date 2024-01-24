@@ -5,7 +5,7 @@ namespace MonkeyLang.Parsing.Statements;
 public class BlockStatement : IStatement
 {
     public Token Token;
-    public IList<IStatement> Statements = [];
+    public IList<IStatement?> Statements = [];
 
     public string TokenLiteral()
     {
